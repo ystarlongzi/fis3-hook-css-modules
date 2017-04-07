@@ -1,0 +1,31 @@
+{
+  "name": "fis3-hook-css-modules",
+  "version": "1.0.0",
+  "description": "基于fis3的css模块化方案",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ystarlongzi/fis3-hook-css-modules"
+  },
+  "bugs": {
+    "url": "https://github.com/ystarlongzi/fis3-hook-css-modules/issues"
+  },
+  "main": "./src/index.js",
+  "scripts": {
+    "test": " "
+  },
+  "keywords": [
+    "fis3",
+    "css-modules",
+    "loader"
+  ],
+  "author": "zhangzilong.zzl@163.com",
+  "license": "ISC",
+  "dependencies": {
+    "css-modules-loader-core": "^1.0.1",
+    "deasync": "^0.1.9",
+    "fis3-preprocessor-css2js": "^0.1.2",
+    "generic-names": "^1.0.2",
+    "object-assign": "^4.1.1",
+    "string-hash": "^1.1.3"
+  }
+}
