@@ -1,28 +1,42 @@
 var deasync = require('deasync');
 var css2js = require('fis3-preprocessor-css2js');
+var _scopedCore =  require('./scopedCore');
 
 module.exports = function (conf) {
-  var scopedCore = require('./scopedCore')(conf);
   var lang = fis.compile.lang;
+  var scopedCore = _scopedCore(conf);
   var rRequire = /(var\s+\w+\s*=\s*)?\brequire\s*\(\s*('|")(.+?)\2\s*\)/g;
 
   var mode = conf.mode || 'dep';
   var extList = conf.extList || [];
   var includePath = conf.includePath || [];
+  var excludePath = conf.excludePath || [];
   var legalJsFiles = {}, legalCssFiles = {};
 
   /**
    * 匹配并缓存会涉及到 css modules 处理的文件
    */
-  function onLookupFile(file) {
-    var isLegal = false;
+  function onLookupFile(info) {
+    var file = info.file || {};
+    var isLegal;
 
     // 1. 对路径进行匹配
+    if (excludePath.length) {
+      excludePath.forEach(function (glob) {
+        if (fis.util.glob(glob, file.subpath)) {
+          isLegal = false;
+        }
+      });
+
+      if (isLegal === false) {
+        return false;
+      }
+    }
+
     if (includePath.length) {
       includePath.forEach(function (glob) {
-        if (fis.util.glob(glob, file.realpath)) {
+        if (fis.util.glob(glob, file.subpath)) {
           isLegal = true;
-          return false;
         }
       });
 
@@ -42,7 +56,6 @@ module.exports = function (conf) {
 
         if (ext === file.ext) {
           isLegal = true;
-          return false;
         }
       });
 
@@ -56,15 +69,27 @@ module.exports = function (conf) {
       return false;
     }
 
+    var rRequire1 = new RegExp(rRequire);
+    var rRequire2 = /import\s+(\w+\s+from)?\s*('|")(.+?)\2/g;
     var fileContent = file.getContent();
-    var match;
 
-    while (match = rRequire.exec(fileContent)) {
-      // fileContent = 'var aa = require("./a/a1");var xx = "oo"'
+    [rRequire1, rRequire2].forEach(function (reg) {
+      var match;
+
+      while (match = reg.exec(fileContent)) {
+        cacheFile(match, file);
+      }
+    });
+
+    function cacheFile(match, file) {
+      // rRequire1.exec('var aa = require("./a/a1");var xx = "oo";');
       // ===>
-      // match = ['var aa = require("a1")', 'var aa ', '"', './a/a1']
+      // match = ['var aa = require("a1")', 'var aa ', '"', './a/a1'];
 
-      var targetFile = fis.project.lookup(path, file).file;
+      // rRequire2.exec('import aa from "./a/a1";var xx = "oo";');
+      // ===>
+      // match = ['import aa from "./a/a1"', 'aa from', '"', './a/a1'];
+      var targetFile = fis.project.lookup(match[3], file).file;
 
       if (targetFile && targetFile.isCssLike) {
         legalJsFiles[file.getId()] = {
@@ -112,9 +137,9 @@ module.exports = function (conf) {
     // 考虑向前兼容, 只要存在变量申明时, 才进行 css modules
     if (needScope) {
       scopedCore.load(fileContent, file.url)
-        .then(function (obj) {
-          scopedCss = obj;
-        });
+      .then(function (obj) {
+        scopedCss = obj;
+      });
 
       while (!scopedCss) {
         deasync.sleep(100);
@@ -126,16 +151,17 @@ module.exports = function (conf) {
       };
     }
 
-    // 更新文件内容
+    // 更新文件信息及内容
     file.extras = file.extras || {};
     file.extras._scopedCssTokens = scopedCss.exportTokens;
     file.setContent(scopedCss.injectableSource);
   }
 
   function compileJs(file, cssFile, requiredPath) {
+    var _rRequire = new RegExp(rRequire);
     var fileContent = file.getContent();
 
-    fileContent = fileContent.replace(rRequire, function (str, declare, quote, value) {
+    fileContent = fileContent.replace(_rRequire, function (str, declare, quote, value) {
       var scopedCss = {};
 
       if (value != requiredPath) {
@@ -183,6 +209,9 @@ module.exports = function (conf) {
     });
 
     file.setContent(fileContent);
+
+    // 在 `compile:end` 阶段, 需要获取 js 文件的缓存信息
+    legalCssFiles[cssFile.getId()].file = file;
   }
 
   /**
@@ -191,13 +220,13 @@ module.exports = function (conf) {
   function onCompileEnd(file) {
     var target = legalCssFiles[file.getId()];
 
-    if (target) {
+    if (target && target.file.cache) {
+      // 删除缓存, 再次编译 js 文件
       fis.util.del(target.file.cache.cacheInfo);
       fis.util.del(target.file.cache.cacheFile);
       fis.compile(target.file);
     }
   }
-
 
   return {
     lookup: onLookupFile,
