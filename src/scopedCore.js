@@ -14,7 +14,7 @@ function getScopedNameGenerator(conf) {
   });
 }
 
-return function (conf) {
+module.exports = function (conf) {
   var scope = Core.scope({
     generateScopedName: getScopedNameGenerator(conf),
   });
