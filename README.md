@@ -80,7 +80,7 @@ fis.hook('css-modules', {
 
 - `includePath`: 配置需要 scoped 的文件路径。类型为数组，支持 glob。
 
-- `excludePath`: 配置不需要 scoped 的文件路径。类型为数据，支持 glob。
+- `excludePath`: 配置不需要 scoped 的文件路径，默认为 ['node_modeuls/**']。类型为数组，支持 glob。
 
 
 
