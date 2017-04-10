@@ -1,6 +1,6 @@
 {
   "name": "fis3-hook-css-modules",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "基于fis3的css模块化方案",
   "repository": {
     "type": "git",
