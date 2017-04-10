@@ -5,6 +5,7 @@ var listeners = require('./listeners');
 var defaultOptions = {
   mode: 'dep',
   extList: ['.js', '.es', '.es6', '.jsx', '.ts', '.tsx'],
+  excludePath: ['/node_modules/**'],
   scope: scopedNameGenerator,
 };
 
@@ -29,5 +30,4 @@ module.exports = function (fis, conf) {
 };
 
 module.exports.defaultOptions = defaultOptions;
-
 
