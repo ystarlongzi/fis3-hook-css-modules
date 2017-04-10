@@ -11,14 +11,24 @@ module.exports = function (conf) {
   var extList = conf.extList || [];
   var includePath = conf.includePath || [];
   var excludePath = conf.excludePath || [];
-  var legalJsFiles = {}, legalCssFiles = {};
+  var legalJsFiles = {}, legalCssFiles = {}, everLookupFiles = {};
 
   /**
    * 匹配并缓存会涉及到 css modules 处理的文件
    */
   function onLookupFile(info) {
-    var file = info.file || {};
+    var file = info.file;
     var isLegal;
+
+    if (!file) {
+      return false;
+    }
+
+    if (everLookupFiles[file.getId()]) {
+      if (everLookupFiles[file.getId()].getContent() === file.getContent()) {
+        return false;
+      }
+    }
 
     // 1. 对路径进行匹配
     if (excludePath.length) {
@@ -91,16 +101,20 @@ module.exports = function (conf) {
       // match = ['import aa from "./a/a1"', 'aa from', '"', './a/a1'];
       var targetFile = fis.project.lookup(match[3], file).file;
 
-      if (targetFile && targetFile.isCssLike) {
-        legalJsFiles[file.getId()] = {
-          file: targetFile,
-          _requiredPath: match[3],
-        };
+      if (targetFile) {
+        everLookupFiles[targetFile.getId()] = targetFile;
 
-        legalCssFiles[targetFile.getId()] = {
-          file: file,
-          _needScope: !!match[1],
-        };
+        if (targetFile.isCssLike) {
+          legalJsFiles[file.getId()] = {
+            file: targetFile,
+            _requiredPath: match[3],
+          };
+
+          legalCssFiles[targetFile.getId()] = {
+            file: file,
+            _needScope: !!match[1],
+          };
+        }
       }
     }
   }
