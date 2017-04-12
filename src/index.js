@@ -24,7 +24,7 @@ module.exports = function (fis, conf) {
   var _listeners = listeners(conf);
 
   // 注册事件
-  fis.on('lookup:file', _listeners.lookup);
+  fis.on('compile:start', _listeners.compileStart);
   fis.on('compile:standard', _listeners.compileStandard);
   fis.on('compile:end', _listeners.compileEnd);
 };

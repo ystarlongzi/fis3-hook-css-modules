@@ -16,8 +16,7 @@ module.exports = function (conf) {
   /**
    * 匹配并缓存会涉及到 css modules 处理的文件
    */
-  function onLookupFile(info) {
-    var file = info.file;
+  function onCompileStart(file) {
     var isLegal;
 
     if (!file) {
@@ -102,7 +101,7 @@ module.exports = function (conf) {
       var targetFile = fis.project.lookup(match[3], file).file;
 
       if (targetFile) {
-        everLookupFiles[targetFile.getId()] = targetFile;
+        everLookupFiles[file.getId()] = file;
 
         if (targetFile.isCssLike) {
           legalJsFiles[file.getId()] = {
@@ -243,7 +242,7 @@ module.exports = function (conf) {
   }
 
   return {
-    lookup: onLookupFile,
+    compileStart: onCompileStart,
     compileStandard: onCompileStandard,
     compileEnd: onCompileEnd,
   };
