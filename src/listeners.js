@@ -199,6 +199,8 @@ module.exports = function (conf) {
           break;
 
         case 'inline':
+          // 添加依赖标记. 否则在更新 css 文件后, 不会触发 livereload
+          str += '"' + lang.info.wrap(lang.dep.wrap(value)) + '"';
           str += css2js.processCss(scopedCss.injectableSource);
           break;
 
@@ -215,6 +217,7 @@ module.exports = function (conf) {
           file.extras.derived = file.extras.derived || [];
           file.extras.derived.push(newFile);
 
+          str += '"' + lang.info.wrap(lang.dep.wrap(value)) + '"';
           str += 'require(' + quote + (newFile.moduleId || newFile.id) + quote + ')';
           break;
       }
